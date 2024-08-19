@@ -31,7 +31,7 @@ def hmac(key: str, message: str):
 
     digest = sha256(key_opad + sha256(key_ipad +
                     message.encode()).digest()).digest()
-    return base64.b64encode(digest).rstrip(b'=').decode("utf-8")
+    return base64.urlsafe_b64encode(digest).rstrip(b'=').decode("utf-8")
 
 
 if __name__ == "__main__":
