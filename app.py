@@ -2,9 +2,37 @@ from flask import Flask, render_template, request, make_response
 import mariadb
 from dotenv import load_dotenv
 import os
+import json
+import base64
+from HMAC256 import hmac
 
 
 load_dotenv()
+
+
+def generate_jwt(username, admin):
+    header = {
+        "alg": "HS256",
+        "typ": "JWT"
+    }
+    payload = {
+        "username": username,
+        "admin": admin
+    }
+
+    encoded_header = base64.urlsafe_b64encode(
+        json.dumps(header, separators=(',', ':')).encode('utf-8')).rstrip(b'=').decode("utf-8")
+    encoded_payload = base64.urlsafe_b64encode(
+        json.dumps(payload, separators=(',', ':')).encode('utf-8')).rstrip(b'=').decode("utf-8")
+    sig = encoded_header + "." + encoded_payload
+    print(sig, end=".")
+    signature = hmac(os.getenv("HS256"), f"{encoded_header}.{encoded_payload}")
+    print(signature)
+
+
+generate_jwt("cc", "False")
+
+
 connection = mariadb.connect(
     host=f"{os.getenv("HOST_DB")}",
     user=f"{os.getenv("USER_DB")}",
