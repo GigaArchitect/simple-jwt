@@ -25,12 +25,8 @@ def generate_jwt(username, admin):
     encoded_payload = base64.urlsafe_b64encode(
         json.dumps(payload, separators=(',', ':')).encode('utf-8')).rstrip(b'=').decode("utf-8")
     sig = encoded_header + "." + encoded_payload
-    print(sig, end=".")
     signature = hmac(os.getenv("HS256"), f"{encoded_header}.{encoded_payload}")
-    print(signature)
-
-
-generate_jwt("cc", "False")
+    return signature
 
 
 connection = mariadb.connect(
@@ -60,13 +56,12 @@ def signup():
     if request.method == 'POST':
         cursor = connection.cursor()
         cursor.execute(f"""INSERT INTO User VALUES ('{
-                       request.args['username']}', '{request.args['password']}'); """)
+                       request.args['userrname']}', '{request.args['password']}'); """)
+        user_token = generate_jwt(request.args['userrname'], "False")
         cursor.execute(f"""INSERT INTO Token VALUES ('{
-                       request.args['username']}','token here')""")
+                       request.args['username']}','{user_token}')""")
         connection.commit()
     return render_template("signup.html")
-
-# request header  ==> Authorization : Bearer <jwttoken>
 
 
 @app.route('/login', methods=['POST', 'GET'])
@@ -78,6 +73,9 @@ def login():
         result = cursor.fetchone()
         if result[0] == request.form['password']:
             response = make_response("Success")
-            response.headers['Authorization'] = "Bearer : Mustafa"
+            cursor.execute(f"""SELECT Token FROM Tokens WHERE username = '{
+                request.form['username']}'""")
+            user_token = cursor.fetchone()[0]
+            response.headers['Authorization'] = f"Bearer : {user_token}"
             return response
     return render_template("signup.html")
