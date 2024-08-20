@@ -53,8 +53,6 @@ app = Flask(__name__)
 @app.route('/signup', methods=['POST', 'GET'])
 def signup():
     if request.method == 'POST':
-        print(request.form["username"])
-        print(request.form["password"])
         cursor.execute(f"""INSERT INTO User VALUES ('{
                        request.form['username']}', '{request.form['password']}'); """)
         user_token = generate_jwt(request.form['username'], "False")
