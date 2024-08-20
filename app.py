@@ -24,7 +24,6 @@ def generate_jwt(username, admin):
         json.dumps(header, separators=(',', ':')).encode('utf-8')).rstrip(b'=').decode("utf-8")
     encoded_payload = base64.urlsafe_b64encode(
         json.dumps(payload, separators=(',', ':')).encode('utf-8')).rstrip(b'=').decode("utf-8")
-    sig = encoded_header + "." + encoded_payload
     signature = hmac(os.getenv("HS256"), f"{encoded_header}.{encoded_payload}")
     return signature
 
@@ -54,20 +53,33 @@ app = Flask(__name__)
 @app.route('/signup', methods=['POST', 'GET'])
 def signup():
     if request.method == 'POST':
-        cursor = connection.cursor()
+        print(request.form["username"])
+        print(request.form["password"])
         cursor.execute(f"""INSERT INTO User VALUES ('{
-                       request.args['userrname']}', '{request.args['password']}'); """)
-        user_token = generate_jwt(request.args['userrname'], "False")
-        cursor.execute(f"""INSERT INTO Token VALUES ('{
-                       request.args['username']}','{user_token}')""")
+                       request.form['username']}', '{request.form['password']}'); """)
+        user_token = generate_jwt(request.form['username'], "False")
+        cursor.execute(f"""INSERT INTO Tokens VALUES ('{
+                       request.form['username']}','{user_token}')""")
         connection.commit()
+        return make_response("SignedUp")
     return render_template("signup.html")
 
 
 @app.route('/login', methods=['POST', 'GET'])
 def login():
+    if request.method == 'GET':
+        if 'Authorization' in request.headers:
+            username = request.args['username']
+            if username:
+                cursor.execute(
+                    "SELECT Token FROM Tokens WHERE username = %s", (username,))
+                result = cursor.fetchone()
+                if result:
+                    user_token = result[0]
+                    if request.headers['Authorization'] == f"Bearer {user_token}":
+                        return make_response("Success Already")
+
     if request.method == 'POST':
-        cursor = connection.cursor()
         cursor.execute(f"""SELECT password FROM User WHERE username = '{
                        request.form['username']}'""")
         result = cursor.fetchone()
@@ -76,6 +88,6 @@ def login():
             cursor.execute(f"""SELECT Token FROM Tokens WHERE username = '{
                 request.form['username']}'""")
             user_token = cursor.fetchone()[0]
-            response.headers['Authorization'] = f"Bearer : {user_token}"
+            response.headers['Authorization'] = f"Bearer {user_token}"
             return response
     return render_template("signup.html")
