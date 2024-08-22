@@ -1,5 +1,6 @@
 from hashlib import sha256
 import base64
+sha256()
 
 
 def number_to_repeated_bytes(number, byte_length, byteorder='big', signed=False):
@@ -32,7 +33,3 @@ def hmac(key: str, message: str):
     digest = sha256(key_opad + sha256(key_ipad +
                     message.encode()).digest()).digest()
     return base64.urlsafe_b64encode(digest).rstrip(b'=').decode("utf-8")
-
-
-if __name__ == "__main__":
-    print(hmac("BBBB", "SUCK IT"))
